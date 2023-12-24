@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # TEST
     from Dataset.Reddit_dataset import RedditGraphDataset
 
-    DATA_DIR = Path(__file__).parents[1] / "Data"
+    DATA_DIR = Path(__file__).parents[1] / "Data" / "Reddit"
     dataset = RedditGraphDataset(root=DATA_DIR)
     data = dataset[765]
 
