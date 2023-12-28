@@ -1,35 +1,39 @@
-from pathlib import Path
-from torch_geometric.datasets import Reddit
-from torch_geometric.data import Data, DataLoader
-from torch.utils.data import Dataset
-
-
-class RedditGraphDataset(Dataset):
-    def __init__(self, root, transform=None):
-        self.dataset = Reddit(root, transform=transform)[0]
-
-    def __len__(self):
-        return self.dataset.num_nodes
-
-    def __getitem__(self, idx):
-        # Node (reddit post) features from 300-dimensional GloVe CommonCrawl word vectors, dim = 612
-        x = self.dataset.x[idx]
-        # Graph connectivity, if the same user comment on both, dim = 2,num_edges
-        edge_index = self.dataset.edge_index
-        # Node labels = “subreddit” the node belongs to
-        y = self.dataset.y[idx]
-
-        data = Data(x=x, edge_index=edge_index, y=y)
-
-        return data
-
-
 if __name__ == "__main__":
-    # TEST
-    from Dataset.Reddit_dataset import RedditGraphDataset
+    from pathlib import Path
+    from torch_geometric.datasets import Reddit
+    from torch_geometric.loader import NeighborLoader
+    from torch_geometric.data import Data
 
+    # Dataset
     DATA_DIR = Path(__file__).parents[1] / "Data" / "Reddit"
-    dataset = RedditGraphDataset(root=DATA_DIR)
-    data = dataset[765]
+    dataset = Reddit(root=DATA_DIR)[0]
+    batch_size = 512
+    num_neighbors = 10
 
-    print(data)
+    # NeighborLoader
+    kwargs = {"num_workers": 6}
+    loader = NeighborLoader(
+        dataset,
+        num_neighbors=[num_neighbors] * 2,
+        batch_size=batch_size,
+        shuffle=True,
+        input_nodes=dataset.train_mask,
+        **kwargs
+    )
+
+    print(dataset)
+    print(loader)
+
+    # # Train, val, test
+    # train_mask = dataset.train_mask
+    # val_mask = dataset.val_mask
+    # test_mask = dataset.test_mask
+    # train_data = Data(
+    #     x=dataset.x[train_mask], edge_index=dataset.edge_index, y=dataset.y[train_mask]
+    # )
+    # val_data = Data(
+    #     x=dataset.x[val_mask], edge_index=dataset.edge_index, y=dataset.y[val_mask]
+    # )
+    # test_data = Data(
+    #     x=dataset.x[test_mask], edge_index=dataset.edge_index, y=dataset.y[test_mask]
+    # )
