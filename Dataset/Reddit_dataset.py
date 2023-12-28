@@ -1,3 +1,5 @@
+# SCRIPT AUTHOR: PIERRE FALCONNIER
+
 if __name__ == "__main__":
     from pathlib import Path
     from torch_geometric.datasets import Reddit
