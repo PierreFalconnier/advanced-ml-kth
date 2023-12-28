@@ -4,6 +4,11 @@
 
 ### Folder "Data"
 
+Folder where the data are actually stored.
+
+### Folder "Dataset"
+
+
 python scripts of the different datasets' classes
 We can take the Dataset class from torch as a reference (https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
 
