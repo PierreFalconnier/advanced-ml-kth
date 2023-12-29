@@ -3,5 +3,8 @@
 **/*.zip
 **/*.png
 
+Data/Flickr/*
+Data/Reddit/*
+
 __pycache__/
 *.pyc
