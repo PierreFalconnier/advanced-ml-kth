@@ -1,0 +1,4 @@
+On Reddit, best model on validation set after 300 epochs
+Test Accuracy: 0.8917
+Test F1 Score (Macro): 0.8657
+Test F1 Score (Micro): 0.8917

@@ -24,5 +24,5 @@ if __name__ == "__main__":
 
     # fit
     results_path = ROOT / "Run" / "Results"
-    model.fit(dataset, num_epoch=1, path=results_path)
+    model.fit(dataset, num_epoch=300, path=results_path)
     model.evaluate_node_classification(dataset, path=results_path)

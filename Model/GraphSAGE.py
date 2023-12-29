@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
 import numpy as np
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 
 class GraphSAGE(nn.Module):
@@ -38,6 +39,20 @@ class GraphSAGE(nn.Module):
         x = F.sigmoid(x)
         x = F.normalize(x, p=2, dim=1)
         return torch.log_softmax(x, dim=-1)
+
+    def plot_learning_curve(self, train_losses, val_losses, path):
+        plt.figure(figsize=(10, 6))
+        plt.plot(train_losses, label="Training Loss")
+        plt.plot(val_losses, label="Validation Loss")
+        plt.title("Learning Curves")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.grid(True)
+        plot_filename = (
+            f"learning_curves_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        )
+        plt.savefig(path / plot_filename)
 
     def fit(self, dataset, num_epoch=200, path=None):
         # Hyperparameters
@@ -71,7 +86,10 @@ class GraphSAGE(nn.Module):
         # Training Loop
         self.train()
         iterator = tqdm(range(self.num_epoch), desc="Training Epoch")
+        train_losses = []
+        val_losses = []
         for epoch in iterator:
+            total_train_loss = 0
             for batch in train_loader:
                 batch = batch.to(self.device)
                 self.optimizer.zero_grad()
@@ -81,27 +99,34 @@ class GraphSAGE(nn.Module):
                 )
                 loss.backward()
                 self.optimizer.step()
+                total_train_loss += loss.item()
+
+            total_train_loss /= len(train_loader)
+            train_losses.append(total_train_loss)
             # Validation step (save best model)
             self.eval()
-            val_loss = 0
+            total_val_loss = 0
             with torch.no_grad():
                 for val_batch in val_loader:
                     val_batch = val_batch.to(self.device)
                     val_out = self(val_batch)
-                    val_loss += F.nll_loss(
+                    total_val_loss += F.nll_loss(
                         val_out[val_batch.val_mask], val_batch.y[val_batch.val_mask]
                     ).item()
-            val_loss /= len(val_loader)
-            iterator.set_description(f"Val Loss: {val_loss}")
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
+            total_val_loss /= len(val_loader)
+            val_losses.append(total_val_loss)
+            iterator.set_description(f"Val Loss: {total_val_loss}")
+            print(total_val_loss)
+            if total_val_loss < best_val_loss:
+                best_val_loss = total_val_loss
                 best_model_state = self.state_dict()
 
         # Load the best model
         self.load_state_dict(best_model_state)
 
-        # save model
+        # save learning curves and best model
         if path is not None:
+            self.plot_learning_curve(train_losses, val_losses, path)
             current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"model_graphsage_{current_time}.pt"
             torch.save(self.state_dict(), path / filename)
