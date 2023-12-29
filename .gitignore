@@ -1,6 +1,7 @@
 **/*.pt
 **/*.npz
 **/*.zip
+**/*.txt
 
 __pycache__/
 *.pyc
