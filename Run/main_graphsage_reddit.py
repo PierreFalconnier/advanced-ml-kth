@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
-    # model.fit(dataset, num_epoch=1, path=RESULT_PATH)
+    model.fit(dataset, num_epoch=1, path=RESULT_PATH)
 
     # node classification (train classifiers on embeded train set and inference on the test set)
     node_classification_evaluation(model, dataset, path=RESULT_PATH)
