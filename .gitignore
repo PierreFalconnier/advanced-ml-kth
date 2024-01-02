@@ -5,6 +5,9 @@
 
 Data/Flickr/*
 Data/Reddit/*
+Data/Cora/*
+Data/CiteSeer/*
+Data/PubMed/*
 
 __pycache__/
 *.pyc

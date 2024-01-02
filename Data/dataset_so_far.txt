@@ -1,3 +1,5 @@
 Reddit
 Flickr
 Cora
+PubMed
+CiteSeer

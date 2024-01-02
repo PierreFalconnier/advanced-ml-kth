@@ -17,17 +17,27 @@ class Node2Vec(nn.Module):
         # self.sparse=True,
 
     def forward(self, data):
-        pass
+        return self.node2vec(data.x, data.edge_index)
 
     def fit(self, dataset, num_epoch=200, path=None):
         self.train()
 
-    def evaluate_node_classification(self, dataset, path=None):
-        pass
+        # Assuming dataset contains PyTorch Geometric Data objects
+        # loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    # LP task
-    def evaluate_link_prediction(self, dataset):
-        pass
+        # optimizer = torch.optim.SGDM(self.parameters(), lr=0.01)
+
+        # for epoch in range(num_epoch):
+        #     for data in loader:
+        #         optimizer.zero_grad()
+        #         embeddings = self.forward(data)
+        #         # Your custom loss function or Node2Vec loss can be added here
+        #         loss = torch.nn.functional.cross_entropy(embeddings, target)
+        #         loss.backward()
+        #         optimizer.step()
+
+        # if path:
+        #     torch.save(self.state_dict(), path)
 
 
 if __name__ == "__main__":
