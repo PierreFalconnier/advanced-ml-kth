@@ -6,6 +6,7 @@ if __name__ == "__main__":
     from pathlib import Path
     import torch
 
+    torch.manual_seed(42)
     # include the path of the dataset(s) and the model(s)
     ROOT = Path(__file__).parents[1]
     if str(ROOT) not in sys.path:
@@ -21,13 +22,14 @@ if __name__ == "__main__":
     dataset = Reddit(root=DATA_DIR)[0]
 
     # GraphSAGE model
-    input_dim = dataset.x.size(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GraphSAGE(input_dim).to(device)
+    model = GraphSAGE(
+        in_channels=dataset.x.size(1), hidden_channels=1024, out_channels=128
+    ).to(device)
 
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
-    model.fit(dataset, num_epoch=1, path=RESULT_PATH)
+    model.fit(dataset, num_epoch=5, path=RESULT_PATH)
 
-    # node classification (train classifiers on embeded train set and inference on the test set)
+    # node classification evaluation
     node_classification_evaluation(model, dataset, path=RESULT_PATH)

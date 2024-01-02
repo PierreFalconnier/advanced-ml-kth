@@ -23,3 +23,7 @@ if __name__ == "__main__":
 
     print(dataset)
     print(loader)
+
+    for batch in loader:
+        print(batch.x.shape)
+        break

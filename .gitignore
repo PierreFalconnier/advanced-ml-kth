@@ -11,3 +11,5 @@ Data/PubMed/*
 
 __pycache__/
 *.pyc
+
+Run/Results/**/*.txt
