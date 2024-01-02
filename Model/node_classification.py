@@ -1,12 +1,17 @@
+# SCRIPT AUTHOR: PIERRE FALCONNIER
+
 import torch
 from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 import numpy as np
 from datetime import datetime
 from torch_geometric.loader import NeighborLoader
 from tqdm import tqdm
+from sklearn.preprocessing import StandardScaler
 
 
 def generate_embeddings(model, data):
@@ -19,12 +24,16 @@ def generate_embeddings(model, data):
 def generate_embeddings(model, data, batch_size=512):
     model.eval()
     device = next(model.parameters()).device
-    embeddings = np.zeros((data.num_nodes, model.output_dim))
 
     # DataLoader --> load nodes + neighborhoods
     loader = NeighborLoader(
         data, num_neighbors=[-1], batch_size=batch_size, shuffle=False
     )
+    batch = next(iter(loader)).to(device)
+    # get output dim
+    output_dim = model(batch).shape[-1]
+    embeddings = np.zeros((data.num_nodes, output_dim))
+
     with torch.no_grad():
         for batch_data in tqdm(loader, desc="Generating Embeddings of the train set"):
             batch_data = batch_data.to(device)
@@ -49,13 +58,16 @@ def node_classification_evaluation(model, data, path):
 
     # Initialize KFold and classifier
     kf = KFold(n_splits=5)
-    classifier = OneVsRestClassifier(LogisticRegression())
+    # classifier = OneVsRestClassifier(LogisticRegression())
+    classifier = OneVsRestClassifier(SGDClassifier())
 
     micro_f1_scores = []
     macro_f1_scores = []
 
     # 5-Fold Cross-Validation
-    for train_index, test_index in kf.split(train_embeddings):
+    for train_index, test_index in tqdm(
+        kf.split(train_embeddings), total=kf.get_n_splits(), desc="KFold Progress"
+    ):
         X_train, X_test = train_embeddings[train_index], train_embeddings[test_index]
         y_train, y_test = train_labels[train_index], train_labels[test_index]
 

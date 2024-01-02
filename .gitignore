@@ -8,3 +8,5 @@ Data/Reddit/*
 
 __pycache__/
 *.pyc
+
+Run/Results/**/*.txt
