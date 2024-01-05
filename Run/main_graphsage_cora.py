@@ -14,12 +14,12 @@ if __name__ == "__main__":
 
     from Model.GraphSAGE import GraphSAGE
     from Model.node_classification import node_classification_evaluation
-    from torch_geometric.datasets import Reddit
+    from torch_geometric.datasets import Planetoid
 
     # dataset
-    dataset_name = "Reddit"
+    dataset_name = "Cora"
     DATA_DIR = ROOT / "Data" / dataset_name
-    dataset = Reddit(root=DATA_DIR)[0]
+    dataset = Planetoid(root=DATA_DIR, name="Cora")[0]
 
     # GraphSAGE model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,8 +29,9 @@ if __name__ == "__main__":
 
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
-    # model.fit(dataset, num_epoch=10, path=RESULT_PATH)
-    # model.load(RESULT_PATH / "best_graphSAGE_20240103_000339.pt")
+    model.fit(dataset, num_epoch=100, path=RESULT_PATH)
+    # # model.load(RESULT_PATH / "best_graphSAGE_20240103_132742.pt")
+    # model.load(RESULT_PATH / "graphSAGE_20240103_132742.pt")
 
     # node classification evaluation
     node_classification_evaluation(model, dataset, path=RESULT_PATH)

@@ -13,3 +13,4 @@ __pycache__/
 *.pyc
 
 Run/Results/**/*.txt
+Run/test.py
