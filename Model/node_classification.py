@@ -9,57 +9,69 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 import numpy as np
 from datetime import datetime
-from torch_geometric.loader import NeighborLoader
+from torch_geometric.loader import NeighborLoader, LinkNeighborLoader
 from tqdm import tqdm
-from sklearn.preprocessing import StandardScaler
 
 
+@torch.no_grad()
 def generate_embeddings(model, data):
     model.eval()
-    with torch.no_grad():
-        embeddings = model(data).detach().cpu().numpy()
+    device = next(model.parameters()).device
+    model.to(device)
+    data.to(device)
+    embeddings = model(data).cpu()
     return embeddings
 
 
-def generate_embeddings(model, data, batch_size=512):
+@torch.no_grad()
+def generate_embeddings_with_batches(model, data, batch_size=512):
     model.eval()
     device = next(model.parameters()).device
+    model.to(device)
 
-    # DataLoader --> load nodes + neighborhoods
     loader = NeighborLoader(
-        data, num_neighbors=[-1], batch_size=batch_size, shuffle=False
+        data,
+        num_neighbors=[-1, -1],
+        batch_size=batch_size,
+        shuffle=False,
+        input_nodes=None,
     )
-    batch = next(iter(loader)).to(device)
-    # get output dim
-    output_dim = model(batch).shape[-1]
+
+    # Get the output dimension from the model
+    sample_data = next(iter(loader)).to(device)
+    output_dim = model(sample_data).shape[-1]
+
     embeddings = np.zeros((data.num_nodes, output_dim))
 
-    with torch.no_grad():
-        for batch_data in tqdm(loader, desc="Generating Embeddings of the train set"):
-            batch_data = batch_data.to(device)
-            # embeddings for the batch
-            batch_embeddings = model(batch_data).detach().cpu().numpy()
-            # store them
-            batch_indices = batch_data.n_id.cpu().numpy()
-            embeddings[batch_indices] = batch_embeddings
+    print("Computing the embeddings...")
+    for batch_data in tqdm(loader):
+        batch_data = batch_data.to(device)
+        batch_embeddings = model(batch_data).detach().cpu().numpy()
+
+        # store embeddings directly in the pre-allocated array
+        batch_indices = batch_data.n_id.cpu().numpy()
+        embeddings[batch_indices] = batch_embeddings
 
     return embeddings
 
 
+@torch.no_grad()
 def node_classification_evaluation(model, data, path):
     # Generate embeddings
     embeddings = generate_embeddings(model, data)
+    # embeddings = generate_embeddings_with_batches(model, data)
 
-    # Prepare labels and training set
+    # labels and training set
     labels = data.y.detach().cpu().numpy()
     train_mask = data.train_mask.detach().cpu().numpy()
     train_embeddings = embeddings[train_mask]
     train_labels = labels[train_mask]
 
-    # Initialize KFold and classifier
+    # KFold and classifier
     kf = KFold(n_splits=5)
     # classifier = OneVsRestClassifier(LogisticRegression())
-    classifier = OneVsRestClassifier(SGDClassifier())
+    classifier = LogisticRegression()
+    # classifier = OneVsRestClassifier(SGDClassifier())
 
     micro_f1_scores = []
     macro_f1_scores = []
@@ -74,9 +86,9 @@ def node_classification_evaluation(model, data, path):
         classifier.fit(X_train, y_train)
         predictions = classifier.predict(X_test)
 
+        # micro and macro F1 scores
         micro_f1 = f1_score(y_test, predictions, average="micro")
         macro_f1 = f1_score(y_test, predictions, average="macro")
-
         micro_f1_scores.append(micro_f1)
         macro_f1_scores.append(macro_f1)
 
