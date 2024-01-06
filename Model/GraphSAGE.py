@@ -10,7 +10,6 @@ from torch_geometric.sampler import NegativeSampling
 from tqdm import tqdm
 from datetime import datetime
 import matplotlib.pyplot as plt
-from torch_geometric.utils import negative_sampling
 from torch_geometric.utils import degree
 
 
@@ -107,7 +106,7 @@ class GraphSAGE(nn.Module):
             # Training step
             total_train_loss = 0
 
-            for batch in self.train_loader:
+            for batch in tqdm(self.train_loader, desc="Batches progress"):
                 batch = batch.to(self.device)
                 self.optimizer.zero_grad()
                 z = self(batch)

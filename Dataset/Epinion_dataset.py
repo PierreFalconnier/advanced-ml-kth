@@ -1,4 +1,5 @@
-import os
+# SCRIPT AUTHOR: PIERRE FALCONNIER
+
 import requests
 import gzip
 import shutil
@@ -7,7 +8,7 @@ import pandas as pd
 import networkx as nx
 from pathlib import Path
 from torch_geometric.data import Data, Dataset
-from torch_geometric.utils import degree, to_networkx
+from torch_geometric.utils import degree
 
 
 class EpinionsDataset(Dataset):
