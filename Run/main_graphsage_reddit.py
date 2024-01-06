@@ -14,12 +14,12 @@ if __name__ == "__main__":
 
     from Model.GraphSAGE import GraphSAGE
     from Model.node_classification import node_classification_evaluation
-    from torch_geometric.datasets import Reddit
+    from torch_geometric.datasets import Reddit2
 
     # dataset
     dataset_name = "Reddit"
     DATA_DIR = ROOT / "Data" / dataset_name
-    dataset = Reddit(root=DATA_DIR)[0]
+    dataset = Reddit2(root=DATA_DIR)[0]
 
     # GraphSAGE model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -2,13 +2,15 @@
 
 if __name__ == "__main__":
     from pathlib import Path
-    from torch_geometric.datasets import Reddit
+
+    # as much nodes as in paper but more edges
+    from torch_geometric.datasets import Reddit2
     from torch_geometric.loader import NeighborLoader
     from torch_geometric.data import Data
 
     # Dataset
     DATA_DIR = Path(__file__).parents[1] / "Data" / "Reddit"
-    dataset = Reddit(root=DATA_DIR)[0]
+    dataset = Reddit2(root=DATA_DIR)[0]
     batch_size = 512
     num_neighbors = 10
 
