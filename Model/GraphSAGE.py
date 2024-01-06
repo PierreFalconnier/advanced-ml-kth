@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import SAGEConv
 from torch.optim import Adam
-from torch_geometric.loader import NeighborLoader, LinkNeighborLoader
+from torch_geometric.loader import LinkNeighborLoader
 from torch_geometric.sampler import NegativeSampling
 from tqdm import tqdm
 from datetime import datetime
@@ -41,71 +41,43 @@ class GraphSAGE(nn.Module):
 
         return x
 
-    # def negative_sampling_loss(
-    #     self, z, pos_edge_index, num_nodes, num_neg_samples=None
-    # ):
-    #     # z: Node embeddings
-    #     # pos_edge_index: Positive edge list of the graph
-    #     # num_nodes: Number of nodes in the graph
-    #     # num_neg_samples: Number of negative samples to generate
+    def compute_loss(self, z, batch, Q=1):
+        # BINARY CROSS ENTROPY POSITIVE/NEGATIVE EDGES
 
-    #     # Sample negative edges
-    #     neg_edge_index = negative_sampling(pos_edge_index, num_nodes, num_neg_samples)
+        # POSITIVE sample loss
+        pos_score = (z[batch.src_index] * z[batch.dst_pos_index]).sum(dim=1)
+        pos_loss = -F.logsigmoid(pos_score).mean()
 
-    #     # positive edge loss
-    #     pos_out = torch.sigmoid(
-    #         (z[pos_edge_index[0]] * z[pos_edge_index[1]]).sum(dim=1)
-    #     )
-    #     pos_loss = -torch.log(pos_out + 1e-15).mean()
+        # NEGATIVE sample loss
+        # neg_score = (z[batch.src_index] * z[batch.dst_neg_index]).sum(dim=1)
+        # neg_loss = F.logsigmoid(-neg_score).mean()
+        src_embeddings = z[batch.src_index]  # B, embedding_dim]
+        src_embeddings = src_embeddings.unsqueeze(1)  # B, 1, embedding_dim
+        neg_embeddings = z[batch.dst_neg_index]  # B, amount, embedding_dim
+        # dot product and mean across the negative samples
+        neg_score = (src_embeddings * neg_embeddings).sum(dim=-1)  # B, amount
+        neg_score_mean = neg_score.mean(dim=1)  # B
+        neg_loss = -F.logsigmoid(-neg_score_mean).mean()
 
-    #     # negative edge loss
-    #     neg_out = torch.sigmoid(
-    #         (z[neg_edge_index[0]] * z[neg_edge_index[1]]).sum(dim=1)
-    #     )
-    #     neg_loss = -torch.log(1 - neg_out + 1e-15).mean()
-
-    #     loss = pos_loss + neg_loss
-    #     return loss
-
-    # def binary_cross_entropy_loss(self, z, edge_label_index, edge_label):
-    #     # Compute the loss given the node embeddings, edge indices, and labels
-    #     edge_out = torch.sigmoid(
-    #         (z[edge_label_index[0]] * z[edge_label_index[1]]).sum(dim=1)
-    #     )
-    #     return F.binary_cross_entropy(edge_out, edge_label)
+        loss = pos_loss + Q * neg_loss
+        return loss
 
     def fit(self, dataset, num_epoch=10, path=None):
         # Hyperparameters
-
         self.dataset = dataset
         self.num_nodes = dataset.num_nodes
         self.num_epoch = num_epoch
         self.batch_size = 512
-        self.lr = 0.001
+        self.lr = 0.0001
         self.optimizer = Adam(self.parameters(), lr=self.lr)
 
-        # Dataloaders
-
-        # self.train_loader = NeighborLoader(
-        #     dataset,
-        #     num_neighbors=self.num_neighbors,
-        #     batch_size=self.batch_size,
-        #     shuffle=True,
-        #     input_nodes=dataset.train_mask,
-        #     num_workers=self.num_workers,
-        # )
-        # self.val_loader = NeighborLoader(
-        #     dataset,
-        #     num_neighbors=self.num_neighbors,
-        #     batch_size=self.batch_size,
-        #     shuffle=False,
-        #     input_nodes=dataset.val_mask,
-        #     num_workers=self.num_workers,
-        # )
-
+        # Dataloader
         # noise distribution of 0.75 factor for smoothing
         node_degrees = degree(dataset.edge_index[0], num_nodes=dataset.num_nodes)
         sampling_weights = node_degrees**0.75
+        neg_sampling = NegativeSampling(
+            mode="triplet", amount=10, weight=sampling_weights
+        )
 
         self.train_loader = LinkNeighborLoader(
             dataset,
@@ -113,63 +85,30 @@ class GraphSAGE(nn.Module):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            neg_sampling=NegativeSampling(
-                mode="binary", amount=1, weight=sampling_weights
-            ),
+            neg_sampling=neg_sampling,
         )
-
-        # self.val_loader = LinkNeighborLoader(
-        #     dataset,
-        #     num_neighbors=self.num_neighbors,
-        #     batch_size=self.batch_size,
-        #     shuffle=False,
-        #     num_workers=self.num_workers,
-        #     neg_sampling=NegativeSampling(mode="binary", amount=1),
-        # )
 
         # paths in order to save the model and learning curves
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"graphSAGE_{current_time}.pt"
-        filename_best = f"best_graphSAGE_{current_time}.pt"
         path_learning_curves = f"graphSAGE_learning_curves_{current_time}.png"
         new_path = path / filename
-        new_path_best = path / filename_best
         path_learning_curves = path / path_learning_curves
 
         # Training Loop
         self.train()
         epoch_iterator = tqdm(range(self.num_epoch), desc="Training Epoch")
         train_losses = []
-        val_losses = []
-        best_val_loss = float("inf")
-        best_model_state = None
 
-        for epoch in epoch_iterator:
+        for _ in epoch_iterator:
             # Training step
             total_train_loss = 0
 
             for batch in self.train_loader:
                 batch = batch.to(self.device)
                 self.optimizer.zero_grad()
-
-                # # loss = self.negative_sampling_loss(z, batch.edge_index, batch.num_nodes)
-
-                # src_nodes = batch.edge_label_index[0]
-                # dst_nodes = batch.edge_label_index[1]
-                # out = z[src_nodes] * z[dst_nodes]
-                # loss = F.binary_cross_entropy_with_logits(
-                #     out.sum(dim=-1), batch.edge_label.float()
-                # )
-
                 z = self(batch)
-                src_nodes = batch.edge_label_index[0]
-                dst_nodes = batch.edge_label_index[1]
-                out = z[src_nodes] * z[dst_nodes]
-
-                loss = F.binary_cross_entropy_with_logits(
-                    out.sum(dim=-1), batch.edge_label.to(self.device)
-                )
-
+                loss = self.compute_loss(z, batch)
                 loss.backward()
                 self.optimizer.step()
 
@@ -179,53 +118,18 @@ class GraphSAGE(nn.Module):
             train_losses.append(total_train_loss)
             print(f"Train Loss: {total_train_loss}")
 
-            # # Validation step (save best model)
-            # self.eval()
-            # total_val_loss = 0
-            # with torch.no_grad():
-            #     for val_batch in self.train_loader:
-            #         val_batch = val_batch.to(self.device)
-            #         val_z = self(val_batch)
-
-            #         # total_val_loss += self.negative_sampling_loss(
-            #         #     val_z, val_batch.edge_index, val_batch.num_nodes
-            #         # ).item()
-
-            #         src_nodes = val_batch.edge_label_index[0]
-            #         dst_nodes = val_batch.edge_label_index[1]
-            #         out = val_z[src_nodes] * val_z[dst_nodes]
-            #         total_val_loss += F.binary_cross_entropy_with_logits(
-            #             out.sum(dim=-1), val_batch.edge_label
-            #         ).item()
-
-            # total_val_loss /= len(self.train_loader)
-            # val_losses.append(total_val_loss)
-            # # epoch_iterator.set_description(f"Val Loss: {total_val_loss}")
-            # print(f"Val Loss: {total_val_loss}")
-
-            # # save best model
-            # if total_val_loss < best_val_loss:
-            #     best_val_loss = total_val_loss
-            #     best_model_state = self.state_dict().copy()
-            #     if path is not None:
-            #         torch.save(self.state_dict(), new_path_best)
-
             # save learning curves and current model
             if path is not None:
                 torch.save(self.state_dict(), new_path)
-                self.plot_learning_curve(train_losses, val_losses, path_learning_curves)
-
-        # # Load the best model
-        # self.load_state_dict(best_model_state)
+                self.plot_learning_curve(train_losses, path_learning_curves)
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
 
-    def plot_learning_curve(self, train_losses, val_losses, path):
+    def plot_learning_curve(self, train_losses, path):
         plt.figure(figsize=(10, 6))
         plt.plot(train_losses, label="Training Loss")
-        plt.plot(val_losses, label="Validation Loss")
-        plt.title("Learning Curves")
+        plt.title("Train Loss")
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.legend()

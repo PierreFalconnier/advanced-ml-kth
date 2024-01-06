@@ -30,8 +30,8 @@ if __name__ == "__main__":
 
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
-    # model.fit(dataset, num_epoch=10, path=RESULT_PATH)
-    model.load(RESULT_PATH / "graphSAGE_20240105_205345.pt")
+    model.fit(dataset, num_epoch=10, path=RESULT_PATH)
+    # model.load(RESULT_PATH / "graphSAGE_20240105_205345.pt")
 
     # node classification evaluation
     node_classification_evaluation(model, dataset, path=RESULT_PATH)
