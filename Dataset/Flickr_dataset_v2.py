@@ -1,5 +1,7 @@
 import scipy.io
 import torch
+from torch_geometric.data import Data
+
 
 # Load the MATLAB file
 mat_content = scipy.io.loadmat('flickr.mat')
