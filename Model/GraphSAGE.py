@@ -33,7 +33,7 @@ class GraphSAGE(nn.Module):
 
         return x
 
-    def full_forward(self, x, edge_index):
+    def forward_feature_edge(self, x, edge_index):
         x = self.conv1((x, x), edge_index)
         x = x.relu()
         x = F.dropout(x, p=self.dropout, training=self.training)
@@ -62,13 +62,16 @@ class GraphSAGE(nn.Module):
         loss = pos_loss + Q * neg_loss
         return loss
 
-    def fit(self, dataset, num_epoch=10, path=None):
+    def fit(self, dataset, num_epoch=10, batch_size=512, lr=0.0001, path=None):
         # Hyperparameters
         self.dataset = dataset
-        self.num_nodes = dataset.num_nodes
+        # self.num_nodes = dataset.num_nodes
+
+        max_node_index = dataset.edge_index.max().item()
+        self.num_nodes = max_node_index + 1
         self.num_epoch = num_epoch
-        self.batch_size = 512
-        self.lr = 0.0001
+        self.batch_size = batch_size
+        self.lr = lr
         self.optimizer = Adam(self.parameters(), lr=self.lr)
 
         # Dataloader

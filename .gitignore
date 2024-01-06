@@ -8,6 +8,7 @@ Data/Reddit/*
 Data/Cora/*
 Data/CiteSeer/*
 Data/PubMed/*
+Data/Epinions/*
 
 __pycache__/
 *.pyc
