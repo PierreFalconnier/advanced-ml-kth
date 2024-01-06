@@ -4,8 +4,6 @@ import torch
 from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.linear_model import LogisticRegressionCV
-from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 import numpy as np
 from datetime import datetime
@@ -19,7 +17,7 @@ def generate_embeddings(model, data):
     device = next(model.parameters()).device
     model.to(device)
     data.to(device)
-    embeddings = model(data).cpu()
+    embeddings = model(data).cpu().numpy()
     return embeddings
 
 
@@ -61,27 +59,22 @@ def node_classification_evaluation(model, data, path):
     embeddings = generate_embeddings(model, data)
     # embeddings = generate_embeddings_with_batches(model, data)
 
-    # labels and training set
+    # labels
     labels = data.y.detach().cpu().numpy()
-    train_mask = data.train_mask.detach().cpu().numpy()
-    train_embeddings = embeddings[train_mask]
-    train_labels = labels[train_mask]
 
     # KFold and classifier
     kf = KFold(n_splits=5)
-    # classifier = OneVsRestClassifier(LogisticRegression())
-    classifier = LogisticRegression()
-    # classifier = OneVsRestClassifier(SGDClassifier())
+    classifier = OneVsRestClassifier(LogisticRegression())
 
     micro_f1_scores = []
     macro_f1_scores = []
 
     # 5-Fold Cross-Validation
     for train_index, test_index in tqdm(
-        kf.split(train_embeddings), total=kf.get_n_splits(), desc="KFold Progress"
+        kf.split(embeddings), total=kf.get_n_splits(), desc="KFold Progress"
     ):
-        X_train, X_test = train_embeddings[train_index], train_embeddings[test_index]
-        y_train, y_test = train_labels[train_index], train_labels[test_index]
+        X_train, X_test = embeddings[train_index], embeddings[test_index]
+        y_train, y_test = labels[train_index], labels[test_index]
 
         classifier.fit(X_train, y_train)
         predictions = classifier.predict(X_test)
