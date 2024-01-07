@@ -22,14 +22,16 @@ def generate_embeddings(model, data):
 
 
 @torch.no_grad()
-def generate_embeddings_with_batches(model, data, batch_size=512):
+def generate_embeddings_with_batches(
+    model, data, batch_size=512, number_of_neighbor_layers=2
+):
     model.eval()
     device = next(model.parameters()).device
     model.to(device)
 
     loader = NeighborLoader(
         data,
-        num_neighbors=[-1, -1],
+        num_neighbors=[-1] * number_of_neighbor_layers,
         batch_size=batch_size,
         shuffle=False,
         input_nodes=None,
@@ -54,10 +56,21 @@ def generate_embeddings_with_batches(model, data, batch_size=512):
 
 
 @torch.no_grad()
-def node_classification_evaluation(model, data, path):
+def node_classification_evaluation(
+    model,
+    data,
+    use_batches=False,
+    batch_size=512,
+    number_of_neighbor_layers=2,
+    path=None,
+):
     # Generate embeddings
-    embeddings = generate_embeddings(model, data)
-    # embeddings = generate_embeddings_with_batches(model, data)
+    if use_batches:
+        embeddings = generate_embeddings_with_batches(
+            model, data, batch_size, number_of_neighbor_layers
+        )
+    else:
+        embeddings = generate_embeddings(model, data)
 
     # labels
     labels = data.y.detach().cpu().numpy()
