@@ -27,6 +27,10 @@ if __name__ == "__main__":
         in_channels=dataset.x.size(1), hidden_channels=1024, out_channels=128
     ).to(device)
 
+    print(model.device)
+
+    exit()
+
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
     RESULT_PATH.mkdir(parents=True, exist_ok=True)

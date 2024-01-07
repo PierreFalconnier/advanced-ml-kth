@@ -14,13 +14,19 @@ from torch_geometric.utils import degree
 
 
 class GraphSAGE(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels):
+    def __init__(
+        self,
+        in_channels,
+        hidden_channels,
+        out_channels,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    ):
         super(GraphSAGE, self).__init__()
         self.conv1 = SAGEConv(in_channels, hidden_channels)  # aggregator is mean
         self.conv2 = SAGEConv(hidden_channels, out_channels)
         self.num_workers = 6
         self.num_neighbors = [25, 10]
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.dropout = 0.4
 
     def forward(self, data):
@@ -91,11 +97,12 @@ class GraphSAGE(nn.Module):
         )
 
         # paths in order to save the model and learning curves
-        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"graphSAGE_{current_time}.pt"
-        path_learning_curves = f"graphSAGE_learning_curves_{current_time}.png"
-        new_path = path / filename
-        path_learning_curves = path / path_learning_curves
+        if path is not None:
+            current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"graphSAGE_{current_time}.pt"
+            path_learning_curves = f"graphSAGE_learning_curves_{current_time}.png"
+            new_path = path / filename
+            path_learning_curves = path / path_learning_curves
 
         # Training Loop
         self.train()
