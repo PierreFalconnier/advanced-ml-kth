@@ -141,4 +141,4 @@ class LINE1(nn.Module):
 # num_worker = 0
 # with_negative_sampling = True
 # model = LINE1(dataset, num_nodes, embedding_dim, num_neg_samples, batch_size, with_negative_sampling)
-# model.fit(dataset, num_epoch, batch_size)
+# model.fit(dataset, num_epoch, batch_size, lr_init)
