@@ -10,21 +10,19 @@ if __name__ == "__main__":
     if str(ROOT) not in sys.path:
         sys.path.append(str(ROOT))
     from Model.link_prediction import split_edges, evaluate
-
+    from Dataset.Twitter_dataset import TwitterDataset
     from Model.GraphSAGE import GraphSAGE
-    from Dataset.BlogCatalog_dataset import BlogCatalogDataset
-
-    # dataset
-    dataset_name = "BlogCatalog"
-    DATA_DIR = ROOT / "Data" / dataset_name
-    data = BlogCatalogDataset(root=DATA_DIR, compute_features=True)[0]
 
     # evaluation test
     torch.manual_seed(42)
 
+    # data
+    dataset_name = "Twitter"
+    DATA_DIR = ROOT / "Data" / dataset_name
+    data = TwitterDataset(root=DATA_DIR)[0]
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.5, is_directed=False, reverse_fraction=0
+        data, test_frac=0.2, is_directed=True, reverse_fraction=1
     )
 
     # model
@@ -39,6 +37,8 @@ if __name__ == "__main__":
     ).to(device)
     model.fit(train_data, num_epoch=10, batch_size=512, lr=0.0001)
 
+    model.device = torch.device("cpu")
+    model.to(torch.device("cpu"))
     evaluate(
         model=model,
         data=data,
@@ -46,6 +46,7 @@ if __name__ == "__main__":
         test_pos_edge_index=test_data.test_pos_edge_index,
     )
 
-    # reverse fraction =0 ==>
-    # reverse fraction =0.5 ==>
-    # reverse fraction =1 ==>
+    # Epinions
+    # reverse fraction =0 ==> 0.4966
+    # reverse fraction =0.5 ==> 0.4975
+    # reverse fraction =1 ==> 0.5000

@@ -22,21 +22,28 @@ if __name__ == "__main__":
     data = CoraFull(root=DATA_DIR)[0]
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.2, is_directed=True, reverse_fraction=0
+        data, test_frac=0.5, is_directed=True, reverse_fraction=1
     )
 
     # model
     # device = torch.device("cpu")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
+    RESULT_PATH.mkdir(parents=True, exist_ok=True)
     model = GraphSAGE(
         in_channels=data.x.size(1),
         hidden_channels=1024,
         out_channels=128,
         device=device,
     ).to(device)
-    model.fit(train_data, num_epoch=10, batch_size=512, lr=0.0001)
+    # model.fit(train_data, num_epoch=10, batch_size=512, lr=0.0001, path=RESULT_PATH)
 
+    # model.load(RESULT_PATH / "graphSAGE_20240108_185226.pt")
+    # model.load(RESULT_PATH / "graphSAGE_20240108_191407.pt")
+    model.load(RESULT_PATH / "graphSAGE_20240108_194705.pt")
+
+    model.device = torch.device("cpu")
+    model.to(torch.device("cpu"))
     evaluate(
         model=model,
         data=data,

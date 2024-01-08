@@ -26,7 +26,7 @@ if __name__ == "__main__":
     data = EpinionsDataset(root=DATA_DIR)[0]
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.2, is_directed=True, reverse_fraction=1
+        data, test_frac=0.5, is_directed=True, reverse_fraction=0
     )
 
     # model

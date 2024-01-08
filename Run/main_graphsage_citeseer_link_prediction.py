@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.2, is_directed=True, reverse_fraction=1
+        data, test_frac=0.5, is_directed=True, reverse_fraction=1
     )
 
     # model
@@ -47,6 +47,6 @@ if __name__ == "__main__":
         test_pos_edge_index=test_data.test_pos_edge_index,
     )
 
-    # reverse fraction =0 ==> 0.9780
-    # reverse fraction =0.5 ==>
-    # reverse fraction =1 ==>
+    # reverse fraction =0 ==> 0.9624
+    # reverse fraction =0.5 ==> .7193
+    # reverse fraction =1 ==> .4849

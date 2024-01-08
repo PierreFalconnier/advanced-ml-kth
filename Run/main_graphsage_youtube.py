@@ -30,6 +30,17 @@ if __name__ == "__main__":
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
     RESULT_PATH.mkdir(parents=True, exist_ok=True)
-    model.fit(dataset, num_epoch=10, batch_size=512, lr=0.0001, path=RESULT_PATH)
+    # model.fit(dataset, num_epoch=10, batch_size=512, lr=0.0001, path=RESULT_PATH)
 
+    model.device = torch.device("cpu")
+    model.to(torch.device("cpu"))
     node_classification_evaluation(model, dataset, path=RESULT_PATH)
+
+    node_classification_evaluation(
+        model,
+        dataset,
+        use_batches=True,
+        batch_size=1024,
+        number_of_neighbor_layers=[25, 10],
+        path=RESULT_PATH,
+    )
