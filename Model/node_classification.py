@@ -2,7 +2,7 @@
 
 import torch
 from sklearn.model_selection import KFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import f1_score
 import numpy as np
@@ -23,7 +23,7 @@ def generate_embeddings(model, data):
 
 @torch.no_grad()
 def generate_embeddings_with_batches(
-    model, data, batch_size=512, number_of_neighbors=[-1] * 2
+    model, data, batch_size=512, number_of_neighbors=[25, 10]
 ):
     model.eval()
     device = next(model.parameters()).device
@@ -36,12 +36,12 @@ def generate_embeddings_with_batches(
         shuffle=False,
         input_nodes=None,
     )
-    loader = LinkNeighborLoader(
-        data,
-        num_neighbors=number_of_neighbors,
-        batch_size=batch_size,
-        shuffle=False,
-    )
+    # loader = LinkNeighborLoader(
+    #     data,
+    #     num_neighbors=number_of_neighbors,
+    #     batch_size=batch_size,
+    #     shuffle=False,
+    # )
 
     # Get the output dimension from the model
     sample_data = next(iter(loader)).to(device)
@@ -67,7 +67,7 @@ def node_classification_evaluation(
     data,
     use_batches=False,
     batch_size=512,
-    number_of_neighbor_layers=2,
+    number_of_neighbor_layers=[25, 10],
     path=None,
 ):
     # Generate embeddings

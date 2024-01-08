@@ -1,11 +1,11 @@
-# SCRIPT AUTHOR: PIERRE FALCONNIER
+# SCRIPT AUTHOR: PIERRE FALCONNIER & MICHEL LE DEZ
 
-from node_classification import generate_embeddings, generate_embeddings_with_batches
 from sklearn.metrics import roc_auc_score
 from pathlib import Path
 from torch_geometric.data import Data
 import torch
 import copy
+import numpy as np
 
 
 def sample_negative_edges(
@@ -13,27 +13,34 @@ def sample_negative_edges(
 ):
     existing_edges = set(zip(edge_index[0].tolist(), edge_index[1].tolist()))
     if is_directed:
-        existing_edges.update(zip(edge_index[1].tolist(), edge_index[0].tolist()))
+        reversed_existing_edges = set(
+            zip(edge_index[1].tolist(), edge_index[0].tolist())
+        )
 
-    # Sample reversed edges if needed
     reversed_edges = []
     if reverse_fraction > 0 and is_directed:
         num_reversed = int(num_neg_samples * reverse_fraction)
-        for u, v in zip(edge_index[0], edge_index[1]):
-            if len(reversed_edges) >= num_reversed:
-                break
-            if (v, u) not in existing_edges:
-                reversed_edges.append([v, u])
+        selected_indices = torch.randperm(len(existing_edges))[:num_reversed]
+        reversed_edges = np.array(list(reversed_existing_edges))[selected_indices]
+        reversed_edges = list(reversed_edges)
 
-    # Sample random negative edges
     neg_edges = []
     while len(neg_edges) + len(reversed_edges) < num_neg_samples:
         u = torch.randint(0, num_nodes, (1,)).item()
         v = torch.randint(0, num_nodes, (1,)).item()
         if (u, v) not in existing_edges and u != v:
-            neg_edges.append([u, v])
+            if is_directed and (u, v) not in reversed_existing_edges:
+                neg_edges.append([u, v])
+            elif not (is_directed):
+                neg_edges.append([u, v])
 
-    return torch.tensor(reversed_edges + neg_edges).t()
+    if len(neg_edges) and len(reversed_edges):
+        return torch.tensor(reversed_edges + neg_edges).t()
+
+    if len(reversed_edges):
+        return torch.tensor(reversed_edges).t()
+
+    return torch.tensor(neg_edges).t()
 
 
 def split_edges(
@@ -166,7 +173,7 @@ if __name__ == "__main__":
     data = EpinionsDataset(root=DATA_DIR)[0]
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.2, is_directed=True, reverse_fraction=1
+        data, test_frac=0.2, is_directed=True, reverse_fraction=0.5
     )
 
     # model
@@ -189,6 +196,6 @@ if __name__ == "__main__":
     )
 
     # Epinions
-    # reverse fraction =0 ==> 0.6472
+    # reverse fraction =0 ==> 0.6531
     # reverse fraction =0.5 ==> 0.5348
     # reverse fraction =1 ==> 0.4731
