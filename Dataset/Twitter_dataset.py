@@ -1,3 +1,5 @@
+# SCRIPT AUTHOR: PIERRE FALCONNIER
+
 import requests
 import zipfile
 import io
