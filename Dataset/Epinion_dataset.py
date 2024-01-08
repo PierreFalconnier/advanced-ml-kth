@@ -58,6 +58,8 @@ class EpinionsDataset(Dataset):
         G.add_nodes_from(range(self.num_nodes))  # Explicitly add all nodes
         G.add_edges_from(edge_index.t().numpy())
 
+        data = Data(edge_index=edge_index)
+
         # Compute features for each node
         if self.feature_mode == "mean_degree":
             features = []
@@ -78,18 +80,18 @@ class EpinionsDataset(Dataset):
                 features.append(feature)
 
             x = torch.cat(features, dim=0).unsqueeze(-1)
+            data = Data(x=x, edge_index=edge_index)
 
         elif self.feature_mode == "degree":
             deg = degree(edge_index[0], num_nodes=self.num_nodes)
             x = deg.unsqueeze(
                 1
             )  # Creating a feature matrix with degrees as the only feature
-
+            data = Data(x=x, edge_index=edge_index)
         else:
             print("Invalid feature mode")
             raise ValueError()
 
-        data = Data(x=x, edge_index=edge_index)
         if self.pre_transform is not None:
             data = self.pre_transform(data)
 
