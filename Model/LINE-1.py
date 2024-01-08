@@ -29,9 +29,9 @@ class LINE1(nn.Module):
         contains the source embeddings of each nodes.
         '''
         super(LINE1, self).__init__()
-        self.embedding = nn.Embedding(num_nodes, embedding_dim)
+        self.embedding = nn.Embedding(dataset.num_nodes, embedding_dim)
 
-        self.num_nodes = num_nodes
+        self.num_nodes = dataset.num_nodes
         self.embedding_dim = embedding_dim
         self.K = num_neg_samples
         self.with_negative_sampling = with_negative_sampling
