@@ -1,4 +1,4 @@
-
+#SCRIPT AUTHOR : Benoit Goupil
 import sys
 from pathlib import Path
 import torch
