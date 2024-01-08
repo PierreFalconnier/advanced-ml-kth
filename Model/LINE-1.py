@@ -40,7 +40,6 @@ class LINE1(nn.Module):
         degrees = degree(dataset.edge_index[0], num_nodes=num_nodes, dtype=torch.int)
         categorical_params = torch.pow(degrees, 0.75)
         self.categorical_params = categorical_params / torch.sum(categorical_params)
-        # self.repeated_categorical_params = categorical_params.repeat(batch_size, 1).reshape(batch_size, -1)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -53,9 +52,8 @@ class LINE1(nn.Module):
         has dimension self.embedding_space therefore, the output has size (self.batch_size, self.K, self.embe-
         -dding_dim)
         '''
-        repeated_categorical_params = self.categorical_params.repeat(len(source_nodes), 1).reshape(len(source_nodes), -1)
-        neg_samples = torch.multinomial(repeated_categorical_params, self.K, replacement=True)
-        neg_sample_embeddings = self.embedding(neg_samples.flatten()).view(len(source_nodes), self.K, self.embedding_dim)
+        neg_samples = torch.multinomial(self.categorical_params, self.K * len(source_nodes), replacement=True)
+        neg_sample_embeddings = self.embedding(neg_samples).view(len(source_nodes), self.K, self.embedding_dim)
         return neg_sample_embeddings
 
     def negative_sampling_loss(self, batch):
@@ -73,15 +71,15 @@ class LINE1(nn.Module):
         '''
         target_embeddings, context_embeddings = self.embedding(batch[:,0]), self.embedding(batch[:,1])
 
-        pos_loss = - torch.log(torch.sigmoid(torch.sum(target_embeddings * context_embeddings, dim=1)) + 1e-15)
+        pos_loss = - F.logsigmoid(torch.sum(target_embeddings * context_embeddings, dim=1))
 
         if self.with_negative_sampling:
-            res = torch.log(torch.sigmoid(-torch.matmul(self.negative_sampling(batch[:,0]), target_embeddings.view(batch.shape[0], self.embedding_dim, 1)).view(batch.shape[0], self.K)) + 1e-15)
-            neg_loss = - torch.sum(res, dim=1)
+            res = - F.logsigmoid(-torch.matmul(self.negative_sampling(batch[:,0]), target_embeddings.unsqueeze(-1)).squeeze(-1))
+            neg_loss = torch.sum(res, dim=1)
 
         elif not(self.with_negative_sampling):
-            res = torch.log(torch.sigmoid(- torch.matmul(self.embedding.weight.view(1, self.num_nodes, self.embedding_dim), target_embeddings.view(batch.shape[0], self.embedding_dim, 1)).view(batch.shape[0], self.num_nodes)) + 1e-15)
-            neg_loss = - self.K * torch.matmul(res, self.categorical_params)
+            res = - F.logsigmoid(-torch.matmul(self.embedding.weight.unsqueeze(0), target_embeddings.unsqueeze(-1)).squeeze(-1))
+            neg_loss = self.K * torch.matmul(res, self.categorical_params)
 
         else:
             print('Error: with_negative_sampling should be set to either True or False.')
@@ -90,7 +88,7 @@ class LINE1(nn.Module):
 
         return loss
 
-    def fit(self, dataset, num_epoch, batch_size, lr_init=0.025, T=10e9, num_workers=0):
+    def fit(self, dataset, num_epoch, batch_size, lr_init, T=10e9, num_workers=0):
         # create dataloader
         edge_dataset = EdgeDataset(dataset.edge_index)
         edge_dataloader = DataLoader(edge_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
@@ -101,8 +99,8 @@ class LINE1(nn.Module):
         # optimizer = SGD(self.parameters(), lr=lr_init)
         optimizer = Adam(self.parameters(), lr=lr_init)
 
-        def lr_lambda(t):
-            return 1.0 - t / T
+        # def lr_lambda(t):
+        #     return 1.0 - t / T
 
         # scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
 
@@ -123,9 +121,12 @@ class LINE1(nn.Module):
 
                 progress_bar.update(1)
                 progress_bar.set_postfix({"Batch": t % len(edge_dataloader), "Loss": loss.item()})
+            # file_path = f"{dataset_name}_epoch{epoch}_batch_size{batch_size}_optimAdam.txt"
+            # with open(file_path, 'w') as file:
+            #     for row in self.embedding.weight:
+            #         file.write('\t'.join(map(str, row.tolist())) + '\n')
             progress_bar.close()
             print(f"Loss: {loss.item()}")
-
 
 ## Example
 
