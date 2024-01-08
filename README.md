@@ -1,4 +1,4 @@
-# advanced-ml-kth
+# advanced-ml-kth - Large Project - Network Representation Learning
 
 ## Organisation of the code
 
@@ -8,14 +8,12 @@ Folder where the data are actually stored.
 
 ### Folder "Dataset"
 
-
-python scripts of the different datasets' classes
-We can take the Dataset class from torch as a reference (https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
+python scripts of the different datasets' classes using the standard from https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
 ### Folder "Model"
 
-python scripts of the different methods'/models' classes
+python scripts of the different methods, node classifiaction and link prediction.
 
 ### Folder "Run"
 
-one general script for a class that evaluate a given model on a given dataset (or maybe 2 classes, one for classifiaction, one for predection) 
+scripts to train models and run evaluations on the NC and LP tasks.
