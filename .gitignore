@@ -9,6 +9,8 @@ Data/Cora/*
 Data/CiteSeer/*
 Data/PubMed/*
 Data/Epinions/*
+Data/BlogCatalog/*
+Data/Youtube/*
 
 __pycache__/
 *.pyc
