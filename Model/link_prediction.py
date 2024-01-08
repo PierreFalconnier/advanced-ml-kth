@@ -90,11 +90,12 @@ def evaluate(model, data, test_pos_edge_index, test_neg_edge_index, path=None):
     model.eval()
 
     # Compute node embeddings using the model on the full graph
-    z = model(data)  # vfor graphsage, use data.x, data.edge_index
+    device = next(model.parameters()).device
+    data.to(device)
+    z = model(data)  # for graphsage, use data.x, data.edge_index
 
     all_test_edges = torch.cat([test_pos_edge_index, test_neg_edge_index], dim=1)
 
-    # scores for test edges
     edge_scores = torch.sigmoid(
         (z[all_test_edges[0]] * z[all_test_edges[1]]).sum(dim=1)
     )
@@ -165,18 +166,20 @@ if __name__ == "__main__":
     data = EpinionsDataset(root=DATA_DIR)[0]
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, test_data = split_edges(
-        data, test_frac=0.5, is_directed=True, reverse_fraction=0.5
+        data, test_frac=0.2, is_directed=True, reverse_fraction=1
     )
 
     # model
-    device = torch.device("cpu")
+    # device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     model = GraphSAGE(
         in_channels=data.x.size(1),
         hidden_channels=1024,
         out_channels=128,
         device=device,
     ).to(device)
-    model.fit(train_data, num_epoch=2, batch_size=512, lr=0.0001)
+    model.fit(train_data, num_epoch=10, batch_size=512, lr=0.0001)
 
     evaluate(
         model=model,
@@ -184,3 +187,8 @@ if __name__ == "__main__":
         test_neg_edge_index=test_data.test_neg_edge_index,
         test_pos_edge_index=test_data.test_pos_edge_index,
     )
+
+    # Epinions
+    # reverse fraction =0 ==> 0.6472
+    # reverse fraction =0.5 ==> 0.5348
+    # reverse fraction =1 ==> 0.4731

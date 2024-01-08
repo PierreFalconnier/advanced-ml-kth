@@ -23,7 +23,7 @@ def generate_embeddings(model, data):
 
 @torch.no_grad()
 def generate_embeddings_with_batches(
-    model, data, batch_size=512, number_of_neighbor_layers=2
+    model, data, batch_size=512, number_of_neighbors=[-1] * 2
 ):
     model.eval()
     device = next(model.parameters()).device
@@ -31,10 +31,16 @@ def generate_embeddings_with_batches(
 
     loader = NeighborLoader(
         data,
-        num_neighbors=[-1] * number_of_neighbor_layers,
+        num_neighbors=number_of_neighbors,
         batch_size=batch_size,
         shuffle=False,
         input_nodes=None,
+    )
+    loader = LinkNeighborLoader(
+        data,
+        num_neighbors=number_of_neighbors,
+        batch_size=batch_size,
+        shuffle=False,
     )
 
     # Get the output dimension from the model

@@ -29,8 +29,12 @@ if __name__ == "__main__":
 
     # fit
     RESULT_PATH = ROOT / "Run" / "Results" / dataset_name
-    # model.fit(dataset, num_epoch=10, path=RESULT_PATH)
+    model.fit(dataset, num_epoch=10, batch_size=128, path=RESULT_PATH)
     # model.load(RESULT_PATH / "best_graphSAGE_20240103_000339.pt")
 
     # node classification evaluation
-    node_classification_evaluation(model, dataset, path=RESULT_PATH)
+    node_classification_evaluation(
+        model,
+        dataset,
+        path=RESULT_PATH,
+    )
