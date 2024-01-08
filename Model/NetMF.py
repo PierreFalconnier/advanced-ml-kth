@@ -1,8 +1,10 @@
-import scipy.io
+# SCRIPT AUTHOR: Benoit GOUPIL
+
 import scipy.sparse as sparse
 from scipy.sparse import csgraph
 import numpy as np
 import torch.nn as nn
+import torch
 
 def filter_eigenvalues(eigenvalues, context_window_size):
     for i in range(len(eigenvalues)):
@@ -51,6 +53,7 @@ class NetMFModule(nn.Module):
         self.rank = rank
         self.embedding_dim = embedding_dim
         self.negative = negative
+        self.dummy_param = nn.Parameter(torch.empty(0))
 
     def forward(self, data):
         # Convert PyG data to adjacency matrix
@@ -70,7 +73,8 @@ class NetMFModule(nn.Module):
         # Step 3: SVD for Embeddings
         print("Performing SVD for embeddings...")
         embeddings = compute_svd_embeddings(deepwalk_matrix, self.embedding_dim)
-
+        # Convert embeddings to torch tensor
+        embeddings = torch.tensor(embeddings, dtype=torch.float)
         return embeddings
 
     @staticmethod
